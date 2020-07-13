@@ -40,7 +40,7 @@ const COERCION_FUNCTIONS = {
   Float: (value) => parseFloat(value),
   Int: (value) => parseInt(value, 10),
   Json: (value) => JSON.parse(value),
-  NumberField: (value) => parseInt(value, 10),
+  number: (value) => parseInt(value, 10),
 }
 
 // Massages a hash of props depending on whether the given named field has
@@ -78,7 +78,7 @@ const inputTagProps = (props) => {
   }
 
   // dataType shouldn't be passed to the underlying HTML element
-  delete tagProps.dataType
+  // delete tagProps.dataType
 
   return tagProps
 }
@@ -148,24 +148,16 @@ const FormError = ({
   )
 }
 
-const coerceValues = (data, children) => {
+const coerceValues = ({ data, fields }) => {
   const coercedData = { ...data }
-
-  children.forEach((child) => {
-    const childName = child.props.name
-
-    const [componentName] = Object.entries(inputComponents).find(
-      ([_, componentConstructor]) => componentConstructor === child.type
-    ) || [undefined, undefined]
-
+  for (let field of fields) {
+    const fieldName = field.name
     const coercionFunction =
-      COERCION_FUNCTIONS[child.props?.dataType || componentName]
-
+      COERCION_FUNCTIONS[field.attributes['data-datatype'] || field.type]
     if (coercionFunction) {
-      coercedData[childName] = coercionFunction(data[childName])
+      coercedData[fieldName] = coercionFunction(data[fieldName])
     }
-  })
-
+  }
   return coercedData
 }
 
@@ -187,7 +179,7 @@ const Form = (props) => {
     <form
       {...formProps}
       onSubmit={formMethods.handleSubmit((data, event) =>
-        onSubmit(coerceValues(data, props.children), event)
+        onSubmit(coerceValues({ data, fields: event.target.elements }), event)
       )}
     >
       <FieldErrorContext.Provider
